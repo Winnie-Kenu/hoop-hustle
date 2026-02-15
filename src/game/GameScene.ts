@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { levels, type LevelConfig } from './levels';
+import SoundManager from './SoundManager';
 
 type GState = 'IDLE' | 'AIMING' | 'FLYING' | 'SCORED' | 'MISSED' | 'GAME_OVER';
 
@@ -22,6 +23,7 @@ export default class GameScene extends Phaser.Scene {
   private comboTxt!: Phaser.GameObjects.Text;
 
   private emitter!: Phaser.GameObjects.Particles.ParticleEmitter;
+  private snd = new SoundManager();
 
   private st: GState = 'IDLE';
   private lvl!: LevelConfig;
@@ -82,9 +84,9 @@ export default class GameScene extends Phaser.Scene {
     (this.rimL.body as Phaser.Physics.Arcade.Body).setCircle(5);
     (this.rimR.body as Phaser.Physics.Arcade.Body).setCircle(5);
 
-    this.physics.add.collider(this.ball, this.rimL);
-    this.physics.add.collider(this.ball, this.rimR);
-    this.physics.add.collider(this.ball, this.bb);
+    this.physics.add.collider(this.ball, this.rimL, () => this.snd.bounce());
+    this.physics.add.collider(this.ball, this.rimR, () => this.snd.bounce());
+    this.physics.add.collider(this.ball, this.bb, () => this.snd.bounce());
 
     // UI text
     const hf = '"Bebas Neue", sans-serif';
@@ -264,6 +266,8 @@ export default class GameScene extends Phaser.Scene {
     const pts = 100 * this.combo;
     this.score += pts;
 
+    this.snd.swish();
+    this.time.delayedCall(200, () => this.snd.cheer());
     this.emitter.emitParticleAt(this.ball.x, this.ball.y, 30);
     this.cameras.main.shake(180, 0.01);
 
@@ -297,6 +301,7 @@ export default class GameScene extends Phaser.Scene {
     this.att--;
     this.updateUI();
 
+    this.snd.miss();
     const msgs = ['MISS!', 'SO CLOSE!', 'TRY AGAIN!', 'ALMOST!', 'NOPE!'];
     this.showMsg(msgs[Phaser.Math.Between(0, msgs.length - 1)], '#ff5252');
 
